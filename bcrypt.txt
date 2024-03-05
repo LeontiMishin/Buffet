@@ -1,0 +1,22 @@
+// Создаем нового пользователя
+const saltRounds = 10;
+const username = 'admin';
+const password = 'secret'; // secret
+
+// Хешируем пароль и сохраняем пользователя в базе данных
+async function createUser() {
+    // Подключаемся к базе данных
+    await client.connect();
+    const database = client.db('Buffet');
+    const collection = database.collection('Users');
+
+    bcrypt.hash(password, saltRounds, function(err, hash) {
+        // Сохраняем пользователя в базе данных
+        collection.insertOne({ username: username, password: hash }, function(err, res) {
+            if (err) throw err;
+            console.log("User inserted");
+        });
+    });
+}
+
+createUser();

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+    }
+</style>
+<body>
+    <ul class="nav justify-content-center">
+        <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/admin">Главная</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/admin/menus">Вывод Меню</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/admin/dishes">Блюда</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="/admin/users">Пользователи</a>
+        </li>
+    </ul>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Список пользователей</h1>
+        <div class="mb-3">
+            <input type="text" class="form-control" id="searchIsikukood" placeholder="Введите личный код">
+        </div>
+        <ul id="userList" class="list-group"></ul>
+    </div>
+    <script>
+        const deleteUser = async (userId) => {
+            try {
+                const response = await fetch(`/api/deleteUser/${userId}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    location.reload(); // Перезагрузить страницу после удаления
+                } else {
+                    console.error('Ошибка удаления пользователя:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Ошибка удаления пользователя:', error);
+            }
+        };        
+
+        let allUsers = [];
+
+const fetchAllUsers = async () => {
+    try {
+        const response = await fetch('/api/users');
+        if (response.ok) {
+            allUsers = await response.json();
+            displayUsers(allUsers);
+        } else {
+            console.error('Ошибка загрузки пользователей:', response.statusText);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки пользователей:', error);
+    }
+};
+
+const searchUser = () => {
+    const isikukood = document.getElementById('searchIsikukood').value;
+    const filteredUsers = allUsers.filter(user => String(user.isikukood).includes(isikukood));
+    if (filteredUsers.length === 0) {
+        document.getElementById('userList').innerHTML = '';
+    } else {
+        displayUsers(filteredUsers);
+    }
+};
+
+
+
+
+
+const displayUsers = (users) => {
+    const userList = document.getElementById('userList');
+    userList.innerHTML = '';
+    users.forEach(user => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        li.innerHTML = ` ${user.firstname} ${user.lastname} <br>
+                        <strong>Email:</strong> ${user.email} <br>
+                        <strong>Личный код:</strong> ${user.isikukood}
+                        <button onclick="deleteUser('${user._id}')" class="btn btn-danger btn-sm">Удалить</button>`;
+        userList.appendChild(li);
+    });
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchIsikukood');
+    searchInput.addEventListener('input', searchUser);
+    fetchAllUsers();
+});
+    </script>
+</body>
+</html>
