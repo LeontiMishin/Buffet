@@ -63,9 +63,6 @@ io.on('connection', (socket) => {
       });
   });
 
-
-
-
 app.use(express.json());
 
 app.get('/api/notes', async (req, res) => {
@@ -94,13 +91,11 @@ app.post('/api/addNote', express.json(), async (req, res) => {
 
       const newNote = {
           date: new Date(req.body.date),
-          note: [req.body.note],
+          note: req.body.note,
           amount: req.body.amount,
           type: req.body.type,
           dishType: req.body.dishType,
       };
-
-      // Всегда создаем новую запись с датой и блюдом
       await collection.insertOne(newNote);
 
       res.status(201).send('Note added successfully');
@@ -154,10 +149,6 @@ app.post('/api/deleteNote', express.json(), async (req, res) => {
       res.status(500).send('Internal Server Error');
   }
 });
-
-
-
-
 
 
 
@@ -279,11 +270,6 @@ app.get('/api/menus', async (req, res) => {
 });
 
 
-
-
-
-
-
 const bcrypt = require('bcrypt');
 
 app.post('/login', async (req, res) => {
@@ -293,23 +279,17 @@ app.post('/login', async (req, res) => {
 
   const { username, password } = req.body;
 
-  // Извлекаем хеш пароля для данного пользователя из базы данных
   const user = await collection.findOne({ username: username });
   const hashedPassword = user.password;
 
   bcrypt.compare(password, hashedPassword, function(err, result) {
       if (result) {
-          // Если пароль верный
           res.json({ success: true });
       } else {
-          // Если пароль неверный
           res.json({ success: false });
       }
   });
 });
-
-
-
 
 
 server.listen(3000, () => {

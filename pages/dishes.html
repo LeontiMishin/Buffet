@@ -54,63 +54,64 @@
         .btn-outline-success{
             margin-top: 15px;
         }
+        .input-edit {
+            width: auto;
+            max-width: 100%;
+        }
     </style>
 </head>
 <body>
 
     <ul class="nav justify-content-center">
         <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="/admin">Главная</a>
+            <a class="nav-link active" aria-current="page" href="/admin">Avaleht</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="/admin/menus">Вывод Меню</a>
+            <a class="nav-link" href="/admin/dishes">Roog</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="/admin/dishes">Блюда</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="/admin/users">Пользователи</a>
+            <a class="nav-link" href="/admin/users">Kasutajad</a>
         </li>
     </ul>
 
     <form id="calendar-form">
-        <input type="text" id="note" class="note-input" placeholder="Введите блюдо">
-        <input type="date" id="date" class="note-input">
+        <input type="text" id="note" class="note-input" placeholder="Sisesta roog">
 
         <div class="input-group mb-3">
             <span class="input-group-text">€</span>
             <input type="text" id="amount" class="form-control" aria-label="Euro amount">
         </div>
         <select id="dishType" class="note-input">
-            <option value="">Выберите вид блюда</option>
-            <option value="гарниры">Гарниры</option>
-            <option value="котлеты">Котлеты</option>
-            <option value="салаты">Салаты</option>
+            <option value="">Vali roa tüüp</option>
+            <option value="soups">Supid</option>
+            <option value="sideDishes">Garneeringud</option>
+            <option value="drinks">Joogid</option>
+            <option value="salads">Salatid</option>
+            <option value="pies">Pirukad</option>
+            <option value="meatDishes">Liha</option>
+            <option value="fishDishes">Kala</option>
+            <option value="desserts">Desserdid</option>
+
         </select>
         <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="type" id="inlineRadio1" value="шт">
-            <label class="form-check-label" for="inlineRadio1">шт</label>
+            <input class="form-check-input" type="radio" name="type" id="inlineRadio1" value="1tk">
+            <label class="form-check-label" for="inlineRadio1">1tk</label>
         </div>
         <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="type" id="inlineRadio2" value="%">
-            <label class="form-check-label" for="inlineRadio2">%</label>
+            <input class="form-check-input" type="radio" name="type" id="inlineRadio2" value="100%">
+            <label class="form-check-label" for="inlineRadio2">100%</label>
         </div>
-        <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="type" id="inlineRadio3" value="стаканы">
-            <label class="form-check-label" for="inlineRadio3">стаканы</label>
-        </div>
-        <div><button type="button" class="btn btn-outline-success" onclick="addNote()">Добавить</button></div>
+        <div><button type="button" class="btn btn-outline-success" onclick="addNote()">Lisama</button></div>
     </form>
 
     <table id="calendar">
         <thead>
             <tr>
-                <th>Дата добавления</th>
-                <th>Блюдо</th>
-                <th>Цена</th>
-                <th>Тип</th>
-                <th>Вид</th>
-                <th>Действия</th>
+                <th>Roog</th>
+                <th>Hind €</th>
+                <th>Tüüp</th>
+                <th>Tüübid</th>
+                <th>Tegevused</th>
             </tr>
         </thead>
         <tbody>
@@ -120,18 +121,24 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             loadNotes();
+
+            var table = document.getElementById('calendar');
+            table.addEventListener('click', function(event) {
+                var target = event.target;
+                if (target.tagName === 'TD' && (target.cellIndex === 0 || target.cellIndex === 1)) {
+                    editCell(target);
+                }
+            });
         });
 
         function addNote() {
             var noteInput = document.getElementById('note');
-            var dateInput = document.getElementById('date');
             var typeInputs = document.getElementsByName('type');
             var amountInput = document.getElementById('amount');
             var dishTypeInput = document.getElementById('dishType');
         
             var note = noteInput.value.trim();
             var amount = amountInput.value.trim();
-            var date = dateInput.value;
             var type = '';
             var dishType = dishTypeInput.value;
         
@@ -142,13 +149,13 @@
                 }
             }
         
-            if (note && date && type) {
+            if (note && type) {
                 fetch('/api/addNote', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ note, date, type, amount, dishType })
+                    body: JSON.stringify({ note, type, amount, dishType })
                 })
                 .then(response => {
                     if (response.ok) {
@@ -162,7 +169,6 @@
                 });
         
                 noteInput.value = '';
-                dateInput.value = '';
                 amountInput.value = '';
                 dishTypeInput.value = '';
             } else {
@@ -190,42 +196,27 @@
             
                     notes.forEach(note => {
                         var row = tbody.insertRow();
-                        var cellDate = row.insertCell(0);
-                        var cellNote = row.insertCell(1);
-                        var cellPrice = row.insertCell(2);
-                        var cellType = row.insertCell(3);
-                        var cellDishType = row.insertCell(4);
-                        var cellActions = row.insertCell(5);
+                        var cellNote = row.insertCell(0);
+                        var cellPrice = row.insertCell(1);
+                        var cellType = row.insertCell(2);
+                        var cellDishType = row.insertCell(3);
+                        var cellActions = row.insertCell(4);
                                 
-                        const formattedDate = new Date(note.date).toLocaleDateString('ee-EE');
-                        cellDate.textContent = formattedDate;
                         cellNote.textContent = note.note;
-                        cellPrice.textContent = note.amount + '€';
+                        cellPrice.textContent = note.amount;
                         cellType.textContent = note.type;
                         cellDishType.textContent = note.dishType;
-            
-                        var editBtn = document.createElement('span');
-                        editBtn.setAttribute('data-id', note._id);
-                        editBtn.setAttribute('data-note', note.note);
-                        editBtn.setAttribute('data-date', note.date);
-                        editBtn.className = 'edit-btn btn btn-outline-dark';
-                        editBtn.textContent = 'Редактировать';
-                        editBtn.onclick = function () {
-                            editNote(row);
-                        };
             
                         var deleteBtn = document.createElement('span');
                         deleteBtn.setAttribute('data-note', note.note);
                         deleteBtn.setAttribute('data-date', note.date);
                         deleteBtn.className = 'btn btn-outline-danger';
-                        deleteBtn.textContent = 'Удалить';
+                        deleteBtn.textContent = 'Kustutada';
                         deleteBtn.onclick = function () {
                             deleteNote(row);
                         };
             
-                        cellActions.appendChild(editBtn);
                         cellActions.appendChild(deleteBtn);
-            
                     });
                 })
                 .catch(error => {
@@ -233,51 +224,71 @@
                 });
         }
         
+        function editCell(cell) {
+            var currentValue = cell.textContent;
+            // Создаем поле ввода для редактирования
+            var inputField = document.createElement('input');
+            inputField.type = 'text';
+            inputField.value = currentValue;
+            inputField.classList.add('form-control', 'input-edit'); // Добавляем классы Bootstrap и input-edit для поля ввода
+        
+            // При нажатии на Enter или потере фокуса, сохраняем изменения
+            inputField.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    saveChanges(cell, inputField);
+                }
+            });
+            inputField.addEventListener('blur', function() {
+                saveChanges(cell, inputField);
+            });
+        
+            // Заменяем содержимое ячейки на поле ввода
+            cell.innerHTML = '';
+            cell.appendChild(inputField);
+        
+            // Устанавливаем фокус на поле ввода
+            inputField.focus();
+        }
 
-        function editNote(row) {
-            var date = new Date(row.cells[0].textContent);
-            var noteValue = row.cells[1].textContent;
-        
-            var newNote = prompt('Введите новое блюдо:', noteValue);
-        
-            if (newNote !== null) {
-                var editBtn = row.querySelector('.edit-btn');
-                var oldNote = editBtn.getAttribute('data-note');
-                var oldDate = editBtn.getAttribute('data-date');
-                var id = editBtn.getAttribute('data-id');
-        
+        function saveChanges(cell, inputField) {
+            var newValue = inputField.value.trim();
+            // Если новое значение не пустое, сохраняем его
+            if (newValue !== '') {
+                cell.textContent = newValue;
+                // Вы можете добавить код для отправки обновленного значения на сервер здесь
+                var rowIndex = cell.parentNode.rowIndex;
+                var table = document.getElementById('calendar');
+                var note = table.rows[rowIndex].cells[0].textContent;
+                var amount = table.rows[rowIndex].cells[1].textContent.replace('€', '');
                 fetch('/api/editNote', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ _id: id, note: oldNote, date: new Date(oldDate), newNoteData: { note: newNote } })
+                    body: JSON.stringify({ note, amount })
                 })
                 .then(response => {
-                    if (response.ok) {
-                        loadNotes();
-                    } else {
-                        console.error('Error editing note:', response.statusText);
+                    if (!response.ok) {
+                        console.error('Error updating note:', response.statusText);
                     }
                 })
                 .catch(error => {
-                    console.error('Error editing note:', error);
+                    console.error('Error updating note:', error);
                 });
+            } else {
+                // Если новое значение пустое, возвращаем предыдущее значение
+                inputField.value = cell.textContent;
             }
         }
 
-
-
         function deleteNote(row) {
-            var editBtn = row.querySelector('.edit-btn');
-            var id = editBtn.getAttribute('data-id');
-    
+            var note = row.cells[0].textContent;
             fetch('/api/deleteNote', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ _id: id })
+                body: JSON.stringify({ note })
             })
             .then(response => {
                 if (response.ok) {
@@ -289,11 +300,6 @@
             .catch(error => {
                 console.error('Error deleting note:', error);
             });
-        }
-
-        function fetchWithCacheBuster(url, options) {
-            const cacheBuster = '?t=' + Date.now();
-            return fetch(url + cacheBuster, options);
         }
     </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

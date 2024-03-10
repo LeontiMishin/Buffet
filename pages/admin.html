@@ -49,6 +49,13 @@
             .ingredient-item {
                 margin-bottom: 5px;
             }
+            #menuHeader {
+                margin-bottom: 10px;
+            }
+            
+            #addNoteButton {
+                margin-top: 10px;
+            }
     </style>
 </head>
 
@@ -56,41 +63,27 @@
 
     <ul class="nav justify-content-center">
         <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="/admin">Главная</a>
+            <a class="nav-link active" aria-current="page" href="/admin">Avaleht</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="/admin/menus">Вывод Меню</a>
+            <a class="nav-link" href="/admin/dishes">Roog</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="/admin/dishes">Блюда</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="/admin/users">Пользователи</a>
+            <a class="nav-link" href="/admin/users">Kasutajad</a>
         </li>
     </ul>
 
     <div class="container mt-5">
-        <h2 class="mb-4">Календарь</h2>
+        <h2 class="text-center mb-4">Kalender</h2>
 
-        <table class="table table-bordered" id="calendar"></table>
 
-        <form id="noteForm" style="display: none;">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Блюдо</th>
-                    </tr>
-                </thead>
-                <tbody id="selectedDishesList">
-                    <!-- Сюда будет добавляться список выбранных блюд -->
-                </tbody>
-            </table>
-            <label for="noteIngredient" class="form-label">Добавление:</label>
-            <select class="form-select" id="noteIngredient" onchange="addDishToMenu()">
-                <option selected disabled>Выберите блюдо</option>
-            </select>
-            <button type="button" class="btn btn-primary mt-2" id="saveMenuButton">Сохранить меню</button>
-        </form>
+
+
+        <table class="table table-bordered border-primary" id="calendar"></table>
+        <div class="row justify-content-center">
+            <div class="col-md-6 text-center">
+                <h2 id="menuHeader" class="mb-4"></h2>
+            </div>
     </div>
 
     <script>
@@ -102,7 +95,6 @@
       document.addEventListener('DOMContentLoaded', function() {
         getDishes();
         createCalendar();
-        getDishesForMenu();
     });
 
     function getDishes() {
@@ -131,13 +123,19 @@
     
     
 
-        function openNoteForm(year, month, day) {
-            const formattedDate = new Date(year, month, day).toISOString().split('T')[0];
-            selectedDay = formattedDate;
-            resetSelectedDishes();
-            getDishesForMenu();
-            document.getElementById("noteForm").style.display = "block";
-        }
+    function openNoteForm(year, month, day) {
+        const formattedDate = new Date(year, month, day).toISOString().split('T')[0];
+        selectedDay = formattedDate;
+    
+        // Установка заголовка Меню
+        const menuHeader = document.getElementById('menuHeader');
+        const selectedDate = new Date(selectedDay);
+        const selectedDateFormat = `${selectedDate.getDate()}.${selectedDate.getMonth() + 1}.${selectedDate.getFullYear()}`;
+        menuHeader.textContent = `Меню на ${selectedDateFormat}`;
+    
+        resetSelectedDishes();
+        document.getElementById("noteForm").style.display = "block";
+    }
 
         function resetSelectedDishes() {
             selectedDishes = [];
@@ -159,7 +157,6 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log('Ответ от сервера:', data);
-                    getDishesForMenu();
                 })
                 .catch(error => {
                     console.error('Ошибка при отправке запроса на сервер:', error);
@@ -169,87 +166,11 @@
             }
         }
 
-        function deleteIngredient(ingredientId) {
-            const confirmation = confirm("Вы уверены, что хотите удалить ингредиент?");
-            if (confirmation) {
-                fetch('/api/deleteIngredient', {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            ingredientId: ingredientId
-                        }),
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Ответ от сервера:', data);
-                        getDishesForMenu();
-                    })
-                    .catch(error => {
-                        console.error('Ошибка при отправке запроса на сервер:', error);
-                    });
-            }
-        }
-
         function isPastDate(year, month, day) {
             const currentDate = new Date();
             const selectedDate = new Date(year, month, day);
             return selectedDate < currentDate;
         }
-
-        function addDishToMenu() {
-            const selectedIngredient = document.getElementById("noteIngredient").value.trim();
-            if (selectedIngredient && selectedIngredient !== "Выберите ингредиент") {
-            if (!selectedDishes.includes(selectedIngredient)) {
-                selectedDishes.push(selectedIngredient);
-
-                // Отобразить выбранное блюдо в списке
-                const selectedDishesList = document.getElementById("selectedDishesList");
-                const listItem = document.createElement("li");
-                listItem.textContent = selectedIngredient;
-                listItem.classList.add("list-group-item");
-                selectedDishesList.appendChild(listItem);
-            } else {
-                alert("Это блюдо уже добавлено!");
-        }
-
-        document.getElementById("noteIngredient").value = "Выберите ингредиент";
-    } else {
-        alert("Выберите ингредиент!");
-    }
-}
-
-function saveMenu() {
-    const formattedDate = new Date(selectedDay).toISOString().split('T')[0];
-
-    if (selectedDishes.length > 0) {
-        var url = `${serverUrl}/api/saveMenu`;
-        var cacheBuster = '?t=' + Date.now();
-        fetch(url + cacheBuster, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                day: formattedDate,
-                note: selectedDishes,
-            }),
-        })
-        .then(response => response.text())
-        .then(data => {
-            console.log('Ответ от сервера:', data);
-            alert('Меню успешно сохранено в базе данных!');
-            resetSelectedDishes(); 
-            getDishesForMenu();
-        })
-        .catch(error => {
-            console.error('Ошибка при отправке запроса на сервер:', error);
-        });
-    } else {
-        alert("Выберите блюда перед сохранением!");
-    }
-}
               
         function updateSelectedDishesList() {
             const selectedDishesList = document.getElementById("selectedDishesList");
@@ -268,81 +189,52 @@ function saveMenu() {
                 selectedDishesList.appendChild(listItem);
             });
         }
-        
-
-
-        function getDishesForMenu() {
-            if (!selectedDay) {
-                console.error('Выберите дату перед запросом блюд.');
-                return;
-            }
-        
-            const formattedDate = new Date(selectedDay).toISOString().split('T')[0];
-        
-            fetch(`${serverUrl}/api/getDishesForDate/${formattedDate}`)
-                .then(response => response.json())
-                .then(data => {
-                    const selectedDishesList = document.getElementById('selectedDishesList');
-                    selectedDishesList.innerHTML = '';
-        
-                    data.forEach(dish => {
-                        const row = document.createElement('tr');
-                        const cell = document.createElement('td');
-                        cell.textContent = dish.note;
-                        row.appendChild(cell);
-                        selectedDishesList.appendChild(row);
-                    });
-                })
-                .catch(error => {
-                    console.error('Ошибка при получении списка блюд с сервера:', error);
-                });
-        }        
-        document.getElementById("saveMenuButton").addEventListener("click", function() {
-            saveMenu();
-            getDishesForMenu();
-        });
-
 
         function createCalendar() {
             const today = new Date();
+            today.setHours(0, 0, 0, 0); // Обнуляем время, чтобы учитывать только дату
             const calendarTable = document.getElementById('calendar');
             calendarTable.innerHTML = '';
             calendarTable.classList.add('table', 'table-striped', 'table-hover');
         
-            for (let i = 0; i < 7; i++) {
+            const monthsInEstonian = ['Jaanuar', 'Veebruar', 'Märts', 'Aprill', 'Mai', 'Juuni', 'Juuli', 'August', 'September', 'Oktoober', 'November', 'Detsember'];
+        
+            const headerRow = calendarTable.insertRow();
+        
+        
+            let row = calendarTable.insertRow();
+        
+            for (let i = 0; i < 14; i++) { // 14 дней для двух недель
                 const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-                const row = calendarTable.insertRow();
                 const cell = row.insertCell();
         
-                const cellText = document.createTextNode(`${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`);
+                const dayOfMonth = date.getDate();
+                const month = monthsInEstonian[date.getMonth()];
+        
+                const cellText = document.createTextNode(`${dayOfMonth} ${month}`);
                 cell.appendChild(cellText);
         
                 cell.classList.add('calendar-cell');
         
-                if (i === 0) {
+                if (date.getTime() === today.getTime()) {
                     cell.classList.add('today');
                 }
         
-                cell.addEventListener('click', () => openNoteForm(date.getFullYear(), date.getMonth(), date.getDate()));
+                if ((i + 1) % 7 === 0) {
+                    row = calendarTable.insertRow();
+                }
+        
+                // Преобразовываем дату в строку формата YYYY-MM-DD
+                const dateString = date.toISOString().split('T')[0];
+                cell.addEventListener('click', () => openNoteForm(date.getFullYear(), date.getMonth(), date.getDate(), dateString));
             }
-            selectedDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
-            getDishesForMenu();
+            // Устанавливаем выбранную дату в формате YYYY-MM-DD
+            selectedDay = today.toISOString().split('T')[0];
         }
+        
+        
+        
 
-        function getMenuForDay() {
-            const formattedDate = new Date(selectedDay).toISOString().split('T')[0];
-            var url = `${serverUrl}/api/getMenu?day=${formattedDate}`;
-            var cacheBuster = '&t=' + Date.now();
-            fetch(url + cacheBuster)
-                .then(response => response.json())
-                .then(data => {
-                    selectedDishes = data.dishes;
-                    updateSelectedDishesList();
-                })
-                .catch(error => {
-                    console.error('Ошибка при получении меню с сервера:', error);
-                });
-        }
 
         function deleteNotesBeforeDate(date) {
             fetch(`${serverUrl}/api/deleteNotesBeforeDate/${date}`, {
@@ -356,7 +248,8 @@ function saveMenu() {
             .catch(error => {
                 console.error('Ошибка при удалении записей:', error);
             });
-        }    
+        }
+         
 
 
     </script>
