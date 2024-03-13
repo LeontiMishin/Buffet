@@ -27,35 +27,38 @@
             pointer-events: none;
             cursor: not-allowed;
         }
-            .calendar-cell {
-                cursor: pointer;
-                text-align: center; 
-                vertical-align: middle;
-            }
-        
-            .today {
-                background-color: #0d6efd;
-                color: #fff;
-            }
-        
-            .calendar-cell:not(.today):hover {
-                background: linear-gradient(to right, #36d1dc, #5b86e5);
-                color: #fff;
-            }        
-            
-            .form-label {
-                margin-top: 20px;
-            }
-            .ingredient-item {
-                margin-bottom: 5px;
-            }
-            #menuHeader {
-                margin-bottom: 10px;
-            }
-            
-            #addNoteButton {
-                margin-top: 10px;
-            }
+
+        .calendar-cell {
+            cursor: pointer;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .today {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+
+        .calendar-cell:not(.today):hover {
+            background: linear-gradient(to right, #36d1dc, #5b86e5);
+            color: #fff;
+        }
+
+        .form-label {
+            margin-top: 20px;
+        }
+
+        .ingredient-item {
+            margin-bottom: 5px;
+        }
+
+        #menuHeader {
+            margin-bottom: 10px;
+        }
+
+        #addNoteButton {
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -75,92 +78,137 @@
 
     <div class="container mt-5">
         <h2 class="text-center mb-4">Kalender</h2>
-
-
-
-
+    
         <table class="table table-bordered border-primary" id="calendar"></table>
         <div class="row justify-content-center">
             <div class="col-md-6 text-center">
                 <h2 id="menuHeader" class="mb-4"></h2>
+                <form id="noteForm" style="display: none;">
+                    <div class="form-group">
+                        <select class="form-select" id="noteIngredient">
+                            <!-- Опции для выбора блюд будут добавлены с помощью JavaScript -->
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addSelectedDish()">Lisa roog</button>
+                    <ul id="selectedDishesList" class="list-group mt-3">
+                        <!-- Выбранные блюда будут добавлены с помощью JavaScript -->
+                    </ul>
+                    <input type="hidden" id="menuDate" name="menuDate">
+                    <button type="button" class="btn btn-success mt-3" onclick="saveMenu()">Salvesta menüü</button>
+                </form>
             </div>
+        </div>
     </div>
+    
 
     <script>
-      const serverUrl = 'http://localhost:3000';
-      let selectedDay = null;
-      let selectedDishes = [];
-      
+        const serverUrl = 'http://localhost:3000';
+        let selectedDay = null;
+        let selectedDishes = [];
 
-      document.addEventListener('DOMContentLoaded', function() {
-        getDishes();
-        createCalendar();
-    });
 
-    function getDishes() {
-        var url = `${serverUrl}/api/getDishes`;
-        var cacheBuster = '?t=' + Date.now();
-        fetch(url + cacheBuster)
-            .then(response => response.json())
-            .then(data => {
-                console.log('Полученные данные:', data);
-    
-                const selectElement = document.getElementById('noteIngredient');
-                data.forEach(dish => {
-                    const option = document.createElement('option');
-                    option.value = dish.note;
-                    option.textContent = `${dish.note} - ${dish.amount} €`;
-                    selectElement.appendChild(option);
+        document.addEventListener('DOMContentLoaded', function () {
+            getDishes();
+            createCalendar();
+        });
+
+        function getDishes() {
+            var url = `${serverUrl}/api/getDishes`;
+            var cacheBuster = '?t=' + Date.now();
+            fetch(url + cacheBuster)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Полученные данные:', data);
+
+                    const selectElement = document.getElementById('noteIngredient');
+                    data.forEach(dish => {
+                        const option = document.createElement('option');
+                        option.value = dish.note;
+                        option.textContent = `${dish.note} - ${dish.amount} €`;
+                        option.dataset.amount = dish.amount;
+                        selectElement.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Ошибка при получении списка блюд с сервера:', error);
                 });
-    
-                const dateToDeleteBefore = new Date(); // Удаляем записи до текущей даты
-                deleteNotesBeforeDate(dateToDeleteBefore.toISOString().split('T')[0]);
-            })
-            .catch(error => {
-                console.error('Ошибка при получении списка блюд с сервера:', error);
-            });
-    }
-    
-    
+        }
 
-    function openNoteForm(year, month, day) {
-        const formattedDate = new Date(year, month, day).toISOString().split('T')[0];
-        selectedDay = formattedDate;
-    
-        // Установка заголовка Меню
-        const menuHeader = document.getElementById('menuHeader');
-        const selectedDate = new Date(selectedDay);
-        const selectedDateFormat = `${selectedDate.getDate()}.${selectedDate.getMonth() + 1}.${selectedDate.getFullYear()}`;
-        menuHeader.textContent = `Меню на ${selectedDateFormat}`;
-    
-        resetSelectedDishes();
-        document.getElementById("noteForm").style.display = "block";
-    }
+        function openNoteForm(year, month, day) {
+            const formattedDate = new Date(year, month, day).toISOString().split('T')[0];
+            selectedDay = formattedDate;
+
+            const menuHeader = document.getElementById('menuHeader');
+            const selectedDate = new Date(selectedDay);
+            const selectedDateFormat = `${selectedDate.getDate()}.${selectedDate.getMonth() + 1}.${selectedDate.getFullYear()}`;
+            menuHeader.textContent = `Menüü ${selectedDateFormat}`;
+
+            resetSelectedDishes();
+            document.getElementById("noteForm").style.display = "block";
+        }
 
         function resetSelectedDishes() {
             selectedDishes = [];
             updateSelectedDishesList();
         }
 
+        function addSelectedDish() {
+            const selectElement = document.getElementById('noteIngredient');
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            const dish = {
+                note: selectedOption.value,
+                amount: selectedOption.dataset.amount
+            };
+            selectedDishes.push(dish);
+            updateSelectedDishesList();
+        }
+
+        function updateSelectedDishesList() {
+            const selectedDishesList = document.getElementById("selectedDishesList");
+            selectedDishesList.innerHTML = '';
+
+            selectedDishes.forEach(dish => {
+                const listItem = document.createElement("li");
+                listItem.textContent = `${dish.note} - ${dish.amount} €`;
+                listItem.classList.add("list-group-item");
+
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "Удалить";
+                deleteButton.classList.add("btn", "btn-danger", "delete-button");
+                deleteButton.addEventListener("click", () => deleteSelectedDish(dish));
+
+                listItem.appendChild(deleteButton);
+                selectedDishesList.appendChild(listItem);
+            });
+        }
+
+        function deleteSelectedDish(dish) {
+            const index = selectedDishes.indexOf(dish);
+            if (index !== -1) {
+                selectedDishes.splice(index, 1);
+                updateSelectedDishesList();
+            }
+        }
+
         function addNote() {
             if (selectedDishes.length > 0) {
                 fetch(`${serverUrl}/api/addNote`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        date: selectedDay,
-                        dishes: selectedDishes,
-                    }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Ответ от сервера:', data);
-                })
-                .catch(error => {
-                    console.error('Ошибка при отправке запроса на сервер:', error);
-                });
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            date: selectedDay,
+                            dishes: selectedDishes,
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Ответ от сервера:', data);
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при отправке запроса на сервер:', error);
+                    });
             } else {
                 alert("Выберите блюдо!");
             }
@@ -171,11 +219,11 @@
             const selectedDate = new Date(year, month, day);
             return selectedDate < currentDate;
         }
-              
+
         function updateSelectedDishesList() {
             const selectedDishesList = document.getElementById("selectedDishesList");
             selectedDishesList.innerHTML = '';
-        
+
             selectedDishes.forEach(dish => {
                 const listItem = document.createElement("li");
                 listItem.textContent = `${dish.note} - ${dish.amount} €`;
@@ -192,66 +240,74 @@
 
         function createCalendar() {
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // Обнуляем время, чтобы учитывать только дату
+            today.setHours(0, 0, 0, 0);
             const calendarTable = document.getElementById('calendar');
             calendarTable.innerHTML = '';
             calendarTable.classList.add('table', 'table-striped', 'table-hover');
-        
+
             const monthsInEstonian = ['Jaanuar', 'Veebruar', 'Märts', 'Aprill', 'Mai', 'Juuni', 'Juuli', 'August', 'September', 'Oktoober', 'November', 'Detsember'];
-        
+
             const headerRow = calendarTable.insertRow();
-        
-        
+
+
             let row = calendarTable.insertRow();
-        
-            for (let i = 0; i < 14; i++) { // 14 дней для двух недель
+
+            for (let i = 0; i < 14; i++) {
                 const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
                 const cell = row.insertCell();
-        
+
                 const dayOfMonth = date.getDate();
                 const month = monthsInEstonian[date.getMonth()];
-        
+
                 const cellText = document.createTextNode(`${dayOfMonth} ${month}`);
                 cell.appendChild(cellText);
-        
+
                 cell.classList.add('calendar-cell');
-        
+
                 if (date.getTime() === today.getTime()) {
                     cell.classList.add('today');
                 }
-        
+
                 if ((i + 1) % 7 === 0) {
                     row = calendarTable.insertRow();
                 }
-        
-                // Преобразовываем дату в строку формата YYYY-MM-DD
                 const dateString = date.toISOString().split('T')[0];
                 cell.addEventListener('click', () => openNoteForm(date.getFullYear(), date.getMonth(), date.getDate(), dateString));
             }
-            // Устанавливаем выбранную дату в формате YYYY-MM-DD
             selectedDay = today.toISOString().split('T')[0];
         }
         
-        
-        
-
-
-        function deleteNotesBeforeDate(date) {
-            fetch(`${serverUrl}/api/deleteNotesBeforeDate/${date}`, {
-                method: 'DELETE'
+        function saveMenu() {
+            const selectedDate = document.getElementById('menuDate').value;
+            const selectedDishes = [];
+            document.querySelectorAll('#selectedDishesList li').forEach(li => {
+                const [note, amount] = li.textContent.split(' - ');
+                selectedDishes.push({ note: note.trim(), amount: amount.trim() });
+            });
+    
+            fetch('/api/saveMenu', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    day: selectedDate,
+                    dishes: selectedDishes,
+                }),
             })
-            .then(response => response.text())
-            .then(data => {
-                console.log(data); // Выводим сообщение о количестве удаленных записей
-                // Здесь можно добавить логику обновления страницы или списка записей
+            .then(response => {
+                if (response.ok) {
+                    alert('Меню успешно сохранено');
+                    location.reload();
+                } else {
+                    throw new Error('Ошибка при сохранении меню');
+                }
             })
             .catch(error => {
-                console.error('Ошибка при удалении записей:', error);
+                console.error('Ошибка при сохранении меню:', error);
+                alert('Ошибка при сохранении меню');
             });
         }
-         
-
-
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

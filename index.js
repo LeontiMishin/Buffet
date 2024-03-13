@@ -71,7 +71,7 @@ app.get('/api/notes', async (req, res) => {
     const database = client.db('Buffet');
     const collection = database.collection('Dishes');
 
-    const notes = await collection.find({}).sort({ date: 1 }).toArray();
+    const notes = await collection.find({}).toArray();
     res.json(notes);
   } catch (error) {
     console.error('Error fetching notes:', error);
@@ -90,7 +90,6 @@ app.post('/api/addNote', express.json(), async (req, res) => {
       const collection = database.collection('Dishes');
 
       const newNote = {
-          date: new Date(req.body.date),
           note: req.body.note,
           amount: req.body.amount,
           type: req.body.type,
@@ -111,24 +110,29 @@ app.post('/api/addNote', express.json(), async (req, res) => {
 
 app.post('/api/editNote', express.json(), async (req, res) => {
   try {
-      await client.connect();
+    await client.connect();
 
-      const database = client.db('Buffet');
-      const collection = database.collection('Dishes');
+    const database = client.db('Buffet');
+    const collection = database.collection('Dishes');
 
-      const { _id, date, newNoteData } = req.body;
+    const { note, amount } = req.body; // Изменено здесь, чтобы считывать note и amount напрямую из req.body
 
-      await collection.updateOne(
-          { _id: new ObjectId(_id) },
-          { $set: { note: newNoteData.note, date: new Date(date) } }
-      );
+    // Необходимо определить ID записи, которую вы хотите изменить, чтобы использовать его в запросе updateOne
+    const { _id } = req.body;
 
-      res.status(200).send('Note edited successfully');
+    await collection.updateOne(
+      { _id: new ObjectId(_id) },
+      { $set: { note: note, amount: amount } } // Изменено здесь, чтобы передать новые значения note и amount
+    );
+
+    res.status(200).send('Note edited successfully');
   } catch (error) {
-      console.error('Error editing note:', error);
-      res.status(500).send('Internal Server Error');
+    console.error('Error editing note:', error);
+    res.status(500).send('Internal Server Error');
   }
 });
+
+
 
 
 
@@ -161,7 +165,7 @@ app.get('/api/getDishes', async (req, res) => {
     const database = client.db('Buffet');
     const collection = database.collection('Dishes');
 
-    const notes = await collection.find({}).sort({ date: 1 }).toArray();
+    const notes = await collection.find({}).toArray();
     res.json(notes);
   } catch (error) {
     console.error('Error fetching notes:', error);
@@ -176,10 +180,10 @@ app.post('/api/saveMenu', express.json(), async (req, res) => {
       const database = client.db('Buffet');
       const dateCollection = database.collection('Date');
 
-      const { day, note } = req.body;
+      const { day, dishes } = req.body;
       const menuDate = new Date(day);
 
-      await dateCollection.updateOne({ date: menuDate }, { $set: { date: menuDate, note: note } }, { upsert: true });
+      await dateCollection.updateOne({ date: menuDate }, { $set: { date: menuDate, dishes: dishes } }, { upsert: true });
       res.status(201).send('Menu saved successfully');
   } catch (error) {
       console.error('Error saving menu:', error);
