@@ -59,6 +59,42 @@
         #addNoteButton {
             margin-top: 10px;
         }
+
+        /* Стили для модального окна */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -78,7 +114,7 @@
 
     <div class="container mt-5">
         <h2 class="text-center mb-4">Kalender</h2>
-    
+
         <table class="table table-bordered border-primary" id="calendar"></table>
         <div class="row justify-content-center">
             <div class="col-md-6 text-center">
@@ -99,7 +135,21 @@
             </div>
         </div>
     </div>
-    
+
+
+    <!-- Модальное окно для добавления заметки -->
+    <div id="addNoteModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddNoteModal()">&times;</span>
+            <h2 class="text-center">Veel päev</h2>
+            <!-- Форма для выбора числа -->
+            <div class="form-group">
+                <label for="noteAmount">Valige kuu päev:</label>
+                <input type="date" id="noteAmount" class="form-control">
+            </div>
+            <button class="btn btn-success" onclick="addNote()">Lisa</button>
+        </div>
+    </div>
 
     <script>
         const serverUrl = 'http://localhost:3000';
@@ -123,8 +173,8 @@
                     const selectElement = document.getElementById('noteIngredient');
                     data.forEach(dish => {
                         const option = document.createElement('option');
-                        option.value = dish.note;
-                        option.textContent = `${dish.note} - ${dish.amount} €`;
+                        option.value = dish.name;
+                        option.textContent = `${dish.name} - ${dish.amount} €`;
                         option.dataset.amount = dish.amount;
                         selectElement.appendChild(option);
                     });
@@ -161,25 +211,6 @@
             };
             selectedDishes.push(dish);
             updateSelectedDishesList();
-        }
-
-        function updateSelectedDishesList() {
-            const selectedDishesList = document.getElementById("selectedDishesList");
-            selectedDishesList.innerHTML = '';
-
-            selectedDishes.forEach(dish => {
-                const listItem = document.createElement("li");
-                listItem.textContent = `${dish.note} - ${dish.amount} €`;
-                listItem.classList.add("list-group-item");
-
-                const deleteButton = document.createElement("button");
-                deleteButton.textContent = "Удалить";
-                deleteButton.classList.add("btn", "btn-danger", "delete-button");
-                deleteButton.addEventListener("click", () => deleteSelectedDish(dish));
-
-                listItem.appendChild(deleteButton);
-                selectedDishesList.appendChild(listItem);
-            });
         }
 
         function deleteSelectedDish(dish) {
@@ -226,7 +257,7 @@
 
             selectedDishes.forEach(dish => {
                 const listItem = document.createElement("li");
-                listItem.textContent = `${dish.note} - ${dish.amount} €`;
+                listItem.textContent = `${dish.name} - ${dish.amount} €`;
                 listItem.classList.add("list-group-item");
 
                 const deleteButton = document.createElement("button");
@@ -244,39 +275,45 @@
             const calendarTable = document.getElementById('calendar');
             calendarTable.innerHTML = '';
             calendarTable.classList.add('table', 'table-striped', 'table-hover');
-
+        
             const monthsInEstonian = ['Jaanuar', 'Veebruar', 'Märts', 'Aprill', 'Mai', 'Juuni', 'Juuli', 'August', 'September', 'Oktoober', 'November', 'Detsember'];
-
+        
             const headerRow = calendarTable.insertRow();
-
-
+        
             let row = calendarTable.insertRow();
-
+        
             for (let i = 0; i < 14; i++) {
                 const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
                 const cell = row.insertCell();
-
+        
                 const dayOfMonth = date.getDate();
                 const month = monthsInEstonian[date.getMonth()];
-
+        
                 const cellText = document.createTextNode(`${dayOfMonth} ${month}`);
                 cell.appendChild(cellText);
-
+        
                 cell.classList.add('calendar-cell');
-
+        
                 if (date.getTime() === today.getTime()) {
                     cell.classList.add('today');
                 }
-
+        
                 if ((i + 1) % 7 === 0) {
                     row = calendarTable.insertRow();
                 }
-                const dateString = date.toISOString().split('T')[0];
-                cell.addEventListener('click', () => openNoteForm(date.getFullYear(), date.getMonth(), date.getDate(), dateString));
+        
+                // Добавляем плюс в последнюю ячейку
+                if (i === 13) {
+                    cell.innerHTML = '<button class="plus-button" onclick="openAddNoteModal()">+</button>';
+                } else {
+                    const dateString = date.toISOString().split('T')[0];
+                    cell.addEventListener('click', () => openNoteForm(date.getFullYear(), date.getMonth(), date.getDate(), dateString));
+                }
             }
             selectedDay = today.toISOString().split('T')[0];
         }
         
+
         function saveMenu() {
             const selectedDate = document.getElementById('menuDate').value;
             const selectedDishes = [];
@@ -284,29 +321,39 @@
                 const [note, amount] = li.textContent.split(' - ');
                 selectedDishes.push({ note: note.trim(), amount: amount.trim() });
             });
-    
+
             fetch('/api/saveMenu', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    day: selectedDate,
-                    dishes: selectedDishes,
-                }),
-            })
-            .then(response => {
-                if (response.ok) {
-                    alert('Меню успешно сохранено');
-                    location.reload();
-                } else {
-                    throw new Error('Ошибка при сохранении меню');
-                }
-            })
-            .catch(error => {
-                console.error('Ошибка при сохранении меню:', error);
-                alert('Ошибка при сохранении меню');
-            });
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        day: selectedDate,
+                        dishes: selectedDishes,
+                    }),
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Меню успешно сохранено');
+                        location.reload();
+                    } else {
+                        throw new Error('Ошибка при сохранении меню');
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка при сохранении меню:', error);
+                    alert('Ошибка при сохранении меню');
+                });
+        }
+
+        function openAddNoteModal() {
+            const modal = document.getElementById('addNoteModal');
+            modal.style.display = 'block';
+        }
+
+        function closeAddNoteModal() {
+            const modal = document.getElementById('addNoteModal');
+            modal.style.display = 'none';
         }
     </script>
 

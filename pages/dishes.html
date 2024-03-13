@@ -75,7 +75,7 @@
     </ul>
 
     <form id="calendar-form">
-        <input type="text" id="note" class="note-input" placeholder="Sisesta roog">
+        <input type="text" id="name" class="note-input" placeholder="Sisesta roog">
 
         <div class="input-group mb-3">
             <span class="input-group-text">€</span>
@@ -132,12 +132,12 @@
         });
 
         function addNote() {
-            var noteInput = document.getElementById('note');
+            var nameInput = document.getElementById('name');
             var typeInputs = document.getElementsByName('type');
             var amountInput = document.getElementById('amount');
             var dishTypeInput = document.getElementById('dishType');
         
-            var note = noteInput.value.trim();
+            var name = nameInput.value.trim();
             var amount = amountInput.value.trim();
             var type = '';
             var dishType = dishTypeInput.value;
@@ -149,13 +149,13 @@
                 }
             }
         
-            if (note && type) {
+            if (name && type) {
                 fetch('/api/addNote', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ note, type, amount, dishType })
+                    body: JSON.stringify({ name, type, amount, dishType })
                 })
                 .then(response => {
                     if (response.ok) {
@@ -168,7 +168,7 @@
                     console.error('Error adding note:', error);
                 });
         
-                noteInput.value = '';
+                nameInput.value = '';
                 amountInput.value = '';
                 dishTypeInput.value = '';
             } else {
@@ -204,7 +204,7 @@
                         var cellDishType = row.insertCell(3);
                         var cellActions = row.insertCell(4);
                                 
-                        cellNote.textContent = note.note;
+                        cellNote.textContent = note.name;
                         cellPrice.textContent = note.amount;
                         cellType.textContent = note.type;
                         cellDishType.textContent = note.dishType;

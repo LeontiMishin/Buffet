@@ -90,7 +90,7 @@ app.post('/api/addNote', express.json(), async (req, res) => {
       const collection = database.collection('Dishes');
 
       const newNote = {
-          note: req.body.note,
+          name: req.body.name,
           amount: req.body.amount,
           type: req.body.type,
           dishType: req.body.dishType,
