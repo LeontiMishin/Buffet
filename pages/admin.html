@@ -209,13 +209,24 @@
         function addSelectedDish() {
             const selectElement = document.getElementById('noteIngredient');
             const selectedOption = selectElement.options[selectElement.selectedIndex];
-            const dish = {
-                name: selectedOption.value,
-                amount: selectedOption.dataset.amount
-            };
-            selectedDishes.push(dish);
-            updateSelectedDishesList();
+            const dishName = selectedOption.value;
+            const dishAmount = selectedOption.dataset.amount;
+        
+            // Проверяем, не добавлено ли уже это блюдо в список выбранных
+            const isDishAlreadySelected = selectedDishes.some(dish => dish.name === dishName);
+        
+            if (!isDishAlreadySelected) {
+                const dish = {
+                    name: dishName,
+                    amount: dishAmount
+                };
+                selectedDishes.push(dish);
+                updateSelectedDishesList();
+            } else {
+                alert('Это блюдо уже добавлено в меню');
+            }
         }
+        
 
         function deleteSelectedDish(dish) {
             const index = selectedDishes.indexOf(dish);
@@ -258,20 +269,21 @@
         function updateSelectedDishesList() {
             const selectedDishesList = document.getElementById("selectedDishesList");
             selectedDishesList.innerHTML = '';
-
+        
             selectedDishes.forEach(dish => {
                 const listItem = document.createElement("li");
                 listItem.textContent = `${dish.name} - ${dish.amount} €`;
                 listItem.classList.add("list-group-item");
-
+        
                 const deleteButton = document.createElement("button");
-                deleteButton.textContent = "Удалить";
-                deleteButton.addEventListener("click", () => deleteIngredient(dish));
+                deleteButton.textContent = "Kustuta";
+                deleteButton.addEventListener("click", () => deleteDishFromMenu(dish));
 
                 listItem.appendChild(deleteButton);
                 selectedDishesList.appendChild(listItem);
             });
         }
+        
 
         function createCalendar() {
             const today = new Date();
@@ -389,6 +401,14 @@
                 return monthsInEstonian[monthIndex];
             }
         }
+        function deleteDishFromMenu(dish) {
+            const index = selectedDishes.indexOf(dish);
+            if (index !== -1) {
+                selectedDishes.splice(index, 1);
+                updateSelectedDishesList();
+            }
+        }
+        
         
         
     </script>

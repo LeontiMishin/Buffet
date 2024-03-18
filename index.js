@@ -95,6 +95,14 @@ app.post('/api/addNote', express.json(), async (req, res) => {
           type: req.body.type,
           dishType: req.body.dishType,
       };
+
+      // Проверяем, является ли введенное значение цены числом с плавающей точкой
+      const pricePattern = /^\d+(\.\d{1,2})?$/;
+      if (!pricePattern.test(newNote.amount)) {
+          res.status(400).send('Invalid price value');
+          return;
+      }
+
       await collection.insertOne(newNote);
 
       res.status(201).send('Note added successfully');
@@ -108,6 +116,8 @@ app.post('/api/addNote', express.json(), async (req, res) => {
 
 
 
+
+
 app.post('/api/editNote', express.json(), async (req, res) => {
   try {
     await client.connect();
@@ -115,14 +125,14 @@ app.post('/api/editNote', express.json(), async (req, res) => {
     const database = client.db('Buffet');
     const collection = database.collection('Dishes');
 
-    const { note, amount } = req.body; // Изменено здесь, чтобы считывать note и amount напрямую из req.body
+    const { name, amount } = req.body; // Изменено здесь, чтобы считывать note и amount напрямую из req.body
 
     // Необходимо определить ID записи, которую вы хотите изменить, чтобы использовать его в запросе updateOne
     const { _id } = req.body;
 
     await collection.updateOne(
       { _id: new ObjectId(_id) },
-      { $set: { note: note, amount: amount } } // Изменено здесь, чтобы передать новые значения note и amount
+      { $set: { name: name, amount: amount } } // Изменено здесь, чтобы передать новые значения note и amount
     );
 
     res.status(200).send('Note edited successfully');

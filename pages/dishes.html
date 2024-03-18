@@ -79,7 +79,7 @@
 
         <div class="input-group mb-3">
             <span class="input-group-text">€</span>
-            <input type="text" id="amount" class="form-control" aria-label="Euro amount">
+            <input type="float" id="amount" class="form-control" aria-label="Euro amount">
         </div>
         <select id="dishType" class="note-input">
             <option value="">Vali roa tüüp</option>
@@ -136,11 +136,17 @@
             var typeInputs = document.getElementsByName('type');
             var amountInput = document.getElementById('amount');
             var dishTypeInput = document.getElementById('dishType');
-        
+          
             var name = nameInput.value.trim();
             var amount = amountInput.value.trim();
             var type = '';
             var dishType = dishTypeInput.value;
+          
+            // Проверка на наличие пустых значений
+            if (!name || !amount || !dishType) {
+                alert('Please fill in all fields.');
+                return;
+            }
         
             for (var i = 0; i < typeInputs.length; i++) {
                 if (typeInputs[i].checked) {
@@ -148,8 +154,10 @@
                     break;
                 }
             }
-        
-            if (name && type) {
+          
+            // Проверяем, является ли введенное значение числом с точкой
+            const pricePattern = /^\d+(\.\d{1,2})?$/;
+            if (pricePattern.test(amount)) {
                 fetch('/api/addNote', {
                     method: 'POST',
                     headers: {
@@ -167,14 +175,17 @@
                 .catch(error => {
                     console.error('Error adding note:', error);
                 });
-        
+          
                 nameInput.value = '';
                 amountInput.value = '';
                 dishTypeInput.value = '';
             } else {
-                alert('Пожалуйста, введите блюдо, выберите дату и тип');
+                alert('Please enter a valid price.');
             }
         }
+        
+        
+        
     
         function loadNotes() {
             var url = '/api/notes';
@@ -210,7 +221,7 @@
                         cellDishType.textContent = note.dishType;
             
                         var deleteBtn = document.createElement('span');
-                        deleteBtn.setAttribute('data-note', note.note);
+                        deleteBtn.setAttribute('data-note', note.name);
                         deleteBtn.setAttribute('data-date', note.date);
                         deleteBtn.className = 'btn btn-outline-danger';
                         deleteBtn.textContent = 'Kustutada';
@@ -230,7 +241,7 @@
         function editCell(cell) {
             var currentValue = cell.textContent;
             // Получаем _id из атрибута data-id ячейки
-            var _id = cell.parentNode.getAttribute('data-id', note._id);
+            var _id = cell.parentNode.getAttribute('data-id', name._id);
             // Создаем поле ввода для редактирования
             var inputField = document.createElement('input');
             inputField.type = 'text';
@@ -258,21 +269,22 @@
 
         function saveChanges(cell, inputField, _id) {
             var newValue = inputField.value.trim();
-            // Если новое значение не пустое, сохраняем его
-            if (newValue !== '') {
+            // Проверяем, является ли новое значение числом с точкой
+            var isFloat = /^\d+(\.\d{1,2})?$/.test(newValue);
+        
+            if (newValue !== '' && isFloat) { // Если новое значение не пустое и является числом с точкой
                 cell.textContent = newValue;
                 // Вы можете добавить код для отправки обновленного значения на сервер здесь
                 var rowIndex = cell.parentNode.rowIndex;
                 var table = document.getElementById('calendar');
-                var note = table.rows[rowIndex].cells[0].textContent;
-                var amount = table.rows[rowIndex].cells[1].textContent.replace('€', '');
-                console.log({ note, amount, _id })
+                var name = table.rows[rowIndex].cells[0].textContent;
+                var amount = newValue; // Используем newValue, так как мы уже проверили, что оно соответствует формату числа с точкой
                 fetch('/api/editNote', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ note, amount, _id }) // Добавляем _id в тело запроса
+                    body: JSON.stringify({ name, amount, _id })
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -283,10 +295,13 @@
                     console.error('Error updating note:', error);
                 });
             } else {
-                // Если новое значение пустое, возвращаем предыдущее значение
+                // Если новое значение пустое или не является числом с точкой, возвращаем предыдущее значение
                 inputField.value = cell.textContent;
             }
         }
+        
+        
+        
         
 
         function deleteNote(row) {
